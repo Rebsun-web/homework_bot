@@ -58,12 +58,15 @@ def send_message(bot, message):
 
 def get_api_answer(timestamp):
     """Делает запрос к единственному эндпоинту API-сервиса."""
-    logger.info('Начало отправки запроса к API')
-    homework_statuses = requests.get(
-        ENDPOINT,
-        headers=HEADERS,
-        params={'from_date': timestamp}
-    )
+    try:
+        logger.info('Начало отправки запроса к API')
+        homework_statuses = requests.get(
+            ENDPOINT,
+            headers=HEADERS,
+            params={'from_date': timestamp}
+        )
+    except Exception as RequestException:
+        logger.error(f'Ошибка при запросе к основному API: {RequestException}')
     if homework_statuses.status_code != HTTPStatus.OK:
         raise RequestStatusExeption(
             f'Статус ответа с эндрпоитна: {homework_statuses.status_code}'
@@ -114,11 +117,10 @@ def main():
     while True:
         try:
             response = get_api_answer(timestamp)
-            logger.debug('Проверка API прошла успешно')
-            homeworks = check_response(response)
-            timestamp = response.get('current date', timestamp)
             homeworks = check_response(response)
             if homeworks:
+                logger.debug('Проверка API прошла успешно')
+                timestamp = response.get('current date', timestamp)
                 message = parse_status(homeworks[0])
                 if message != status:
                     send_message(bot, message)
